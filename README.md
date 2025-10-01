@@ -20,24 +20,12 @@ Install dependencies:
 bun install
 ```
 
-### Quick Start
+### Test
 
-Fetch a single topic:
-
-```bash
-bun run index.ts
-```
-
-Stream topics with historical backfill:
+Run all tests:
 
 ```bash
-MODE=stream bun run index.ts
-```
-
-Search topics and posts:
-
-```bash
-MODE=search bun run index.ts
+bun test
 ```
 
 ### Config
@@ -97,98 +85,28 @@ Exposes data through three typed procedures:
 
 **Data flow:** Discourse API → HTTP Client → Schema Validation → State Machine → Effect Stream → Your Application
 
-## Testing
+## API
 
-### Unit Tests
+### Available Procedures
 
-```bash
-bun test
-```
+**getTopic** - Fetch a single topic with all posts
 
-Coverage:
+- Input: `{ id: number }`
+- Output: `{ topic: Topic | null, posts: Post[] }`
 
-- Initialization - Config setup and plugin metadata
-- Topic Parsing - Valid data, optional fields, error handling
-- Post Parsing - Content parsing, missing fields, filtering
-- Router - Procedure registration and handler setup
+**monitor** - Stream topics with historical backfill
 
-### Integration Tests
+- Input: `{ category?: string, tags?: string[] }`
+- Output: `{ items: Topic[], nextState: State | null }`
+- State machine: historical → realtime phases
 
-Test against live Discourse instances:
+**search** - Query topics and posts
 
-#### Fetch
+- Input: `{ query: string, filters?: { username?, after? } }`
+- Output: `{ topics: Topic[], posts: Post[], nextState: State | null }`
+- Note: `minLikes` filter defined but not yet implemented
 
-```bash
-bun run index.ts
-```
-
-#### Monitor
-
-```bash
-MODE=stream bun run index.ts
-```
-
-#### Search
-
-```bash
-MODE=search bun run index.ts
-```
-
-## Procedures
-
-_See `index.ts` for complete setup examples. Code snippets below assume plugin runtime is initialized._
-
-### getTopic
-
-```typescript
-const result = await executePlugin(plugin, {
-  procedure: "getTopic",
-  input: { id: 123 },
-  state: null,
-});
-
-// Returns: { topic: Topic | null, posts: Post[] }
-```
-
-### monitor
-
-```typescript
-const stream = await streamPlugin(
-  "discourse",
-  config,
-  {
-    procedure: "monitor",
-    input: { category: "announcements" },
-    state: null,
-  },
-  {
-    maxItems: 100,
-    onStateChange: (state, items) =>
-      Effect.sync(() => {
-        console.log(`Phase: ${state?.phase}, Items: ${items.length}`);
-      }),
-  }
-);
-```
-
-### search
-
-```typescript
-const result = await executePlugin(plugin, {
-  procedure: "search",
-  input: {
-    query: "governance",
-    filters: {
-      username: "admin",
-      minLikes: 5,
-      after: "2025-01-01T00:00:00Z",
-    },
-  },
-  state: null,
-});
-
-// Returns: { topics: Topic[], posts: Post[], nextState: State | null }
-```
+For usage examples, see the [test files](./src/__tests__/).
 
 ## Type Definitions
 

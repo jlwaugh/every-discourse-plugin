@@ -85,7 +85,7 @@ const callAPI = (
   endpoint: string,
   params?: Record<string, any>,
   retryCount = 0
-): Effect.Effect<any, Error> => {
+): Effect.Effect<any, never> => {
   return Effect.gen(function* () {
     const url = new URL(endpoint, baseUrl);
 
@@ -112,13 +112,15 @@ const callAPI = (
           headers,
           signal: AbortSignal.timeout(timeout),
         }),
-      catch: (error) =>
-        new Error(
+      catch: (error) => {
+        console.error(
           `Discourse API error: ${
             error instanceof Error ? error.message : String(error)
           }`
-        ),
-    });
+        );
+        return error;
+      },
+    }).pipe(Effect.orDie);
 
     if (response.status === 429 && retryCount < 3) {
       const backoffMs = Math.pow(2, retryCount) * 1000;
@@ -136,18 +138,220 @@ const callAPI = (
     }
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      console.error(`HTTP ${response.status}: ${response.statusText}`);
+      return { post_stream: { posts: [] }, topic_list: { topics: [] } };
     }
 
     return yield* Effect.tryPromise({
       try: () => response.json(),
-      catch: (error) =>
-        new Error(
+      catch: (error) => {
+        console.error(
           `Failed to parse JSON: ${
             error instanceof Error ? error.message : String(error)
           }`
-        ),
-    });
+        );
+        return error;
+      },
+    }).pipe(Effect.orDie);
+  });
+};
+
+// NEW: Extract router logic into testable functions
+type PluginContext = {
+  baseUrl: string;
+  timeout: number;
+  batchSize: number;
+  apiKey?: string;
+  apiUsername?: string;
+};
+
+type MonitorState = {
+  phase: "historical" | "realtime";
+  lastTopicId?: number;
+  lastChecked?: string;
+};
+
+const handleGetTopic = (
+  context: PluginContext,
+  topicId: number
+): Effect.Effect<
+  { topic: DiscourseTopic | null; posts: DiscoursePost[] },
+  never
+> => {
+  return Effect.gen(function* () {
+    const result = yield* callAPI(
+      context.baseUrl,
+      context.timeout,
+      context.apiKey,
+      context.apiUsername,
+      `/t/${topicId}.json`
+    );
+
+    const topic = parseTopic(result);
+    const posts = parsePosts(result.post_stream?.posts || []);
+
+    return { topic, posts };
+  });
+};
+
+const handleMonitor = (
+  context: PluginContext,
+  input: { category?: string; tags?: string[] },
+  state: MonitorState | null
+): Effect.Effect<
+  {
+    items: DiscourseTopic[];
+    nextState: MonitorState | null;
+  },
+  never
+> => {
+  return Effect.gen(function* () {
+    const currentState = state ?? {
+      phase: "historical" as const,
+      lastTopicId: undefined,
+      lastChecked: undefined,
+    };
+
+    console.log(`[Discourse] Monitor - Phase: ${currentState.phase}`);
+
+    // HISTORICAL PHASE
+    if (currentState.phase === "historical") {
+      const page = currentState.lastTopicId
+        ? Math.floor(currentState.lastTopicId / context.batchSize)
+        : 0;
+
+      const result = yield* callAPI(
+        context.baseUrl,
+        context.timeout,
+        context.apiKey,
+        context.apiUsername,
+        "/latest.json",
+        {
+          category: input.category,
+          page: page,
+        }
+      );
+
+      const topics = parseTopics(result.topic_list?.topics || []);
+
+      if (topics.length === 0) {
+        console.log("[Discourse] Historical complete → realtime");
+        return {
+          items: [],
+          nextState: {
+            phase: "realtime" as const,
+            lastChecked: new Date().toISOString(),
+          },
+        };
+      }
+
+      const newLastTopicId = (currentState.lastTopicId || 0) + topics.length;
+
+      return {
+        items: topics,
+        nextState: {
+          ...currentState,
+          lastTopicId: newLastTopicId,
+        },
+      };
+    }
+
+    // REALTIME PHASE
+    const result = yield* callAPI(
+      context.baseUrl,
+      context.timeout,
+      context.apiKey,
+      context.apiUsername,
+      "/latest.json",
+      {
+        category: input.category,
+        per_page: context.batchSize,
+      }
+    );
+
+    const allTopics = parseTopics(result.topic_list?.topics || []);
+    const lastChecked = currentState.lastChecked
+      ? new Date(currentState.lastChecked).getTime()
+      : Date.now() - ONE_HOUR_MS;
+
+    const newTopics = allTopics.filter(
+      (t) => new Date(t.created_at).getTime() > lastChecked
+    );
+
+    console.log(`[Discourse] Realtime: ${newTopics.length} new topics`);
+
+    return {
+      items: newTopics,
+      nextState: {
+        phase: "realtime" as const,
+        lastChecked: new Date().toISOString(),
+      },
+    };
+  });
+};
+
+const handleSearch = (
+  context: PluginContext,
+  input: {
+    query: string;
+    filters?: {
+      username?: string;
+      minLikes?: number;
+      after?: string;
+    };
+  },
+  state: { phase: "historical" | "realtime"; lastTopicId?: number } | null
+): Effect.Effect<
+  {
+    topics: DiscourseTopic[];
+    posts: DiscoursePost[];
+    nextState: {
+      phase: "historical" | "realtime";
+      lastTopicId?: number;
+    } | null;
+  },
+  never
+> => {
+  return Effect.gen(function* () {
+    const currentState = state ?? {
+      phase: "historical" as const,
+      lastTopicId: undefined,
+      lastChecked: undefined,
+    };
+
+    let query = input.query;
+    if (input.filters?.username) query += ` @${input.filters.username}`;
+    if (input.filters?.after)
+      query += ` after:${input.filters.after.split("T")[0]}`;
+
+    const result = yield* callAPI(
+      context.baseUrl,
+      context.timeout,
+      context.apiKey,
+      context.apiUsername,
+      "/search.json",
+      {
+        q: query,
+        page: currentState.lastTopicId
+          ? Math.floor(currentState.lastTopicId / 20)
+          : 0,
+      }
+    );
+
+    const topics = parseTopics(result.topics || []);
+    const posts = parsePosts(result.posts || []);
+    const hasMore = topics.length >= 20;
+
+    return {
+      topics,
+      posts,
+      nextState: hasMore
+        ? {
+            ...currentState,
+            lastTopicId: (currentState.lastTopicId || 0) + topics.length,
+          }
+        : null,
+    };
   });
 };
 
@@ -190,159 +394,19 @@ export default createPlugin({
   createRouter: (context) => {
     const os = implement(discourseContract);
 
-    const getTopic = os.getTopic.handler(({ input, errors }) =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          try {
-            const result = yield* callAPI(
-              context.baseUrl,
-              context.timeout,
-              context.apiKey,
-              context.apiUsername,
-              `/t/${input.id}.json`
-            );
-
-            const topic = parseTopic(result);
-            const posts = parsePosts(result.post_stream?.posts || []);
-
-            return { topic, posts };
-          } catch (error) {
-            console.error(`Error fetching topic ${input.id}:`, error);
-            return { topic: null, posts: [] };
-          }
-        })
-      )
+    const getTopic = os.getTopic.handler(({ input }) =>
+      Effect.runPromise(handleGetTopic(context, input.id))
     );
 
     const monitor = os.monitor.handler(({ input, context: routerContext }) =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const state = (routerContext as any)?.state ?? {
-            phase: "historical" as const,
-            lastTopicId: undefined,
-            lastChecked: undefined,
-          };
-
-          console.log(`[Discourse] Monitor - Phase: ${state.phase}`);
-
-          // HISTORICAL PHASE
-          if (state.phase === "historical") {
-            const page = state.lastTopicId
-              ? Math.floor(state.lastTopicId / context.batchSize)
-              : 0;
-
-            const result = yield* callAPI(
-              context.baseUrl,
-              context.timeout,
-              context.apiKey,
-              context.apiUsername,
-              "/latest.json",
-              {
-                category: input.category,
-                page: page,
-              }
-            );
-
-            const topics = parseTopics(result.topic_list?.topics || []);
-
-            if (topics.length === 0) {
-              console.log("[Discourse] Historical complete → realtime");
-              return {
-                items: [],
-                nextState: {
-                  phase: "realtime" as const,
-                  lastChecked: new Date().toISOString(),
-                },
-              };
-            }
-
-            const newLastTopicId = (state.lastTopicId || 0) + topics.length;
-
-            return {
-              items: topics,
-              nextState: {
-                ...state,
-                lastTopicId: newLastTopicId,
-              },
-            };
-          }
-
-          // REALTIME PHASE
-          const result = yield* callAPI(
-            context.baseUrl,
-            context.timeout,
-            context.apiKey,
-            context.apiUsername,
-            "/latest.json",
-            {
-              category: input.category,
-              per_page: context.batchSize,
-            }
-          );
-
-          const allTopics = parseTopics(result.topic_list?.topics || []);
-          const lastChecked = state.lastChecked
-            ? new Date(state.lastChecked).getTime()
-            : Date.now() - ONE_HOUR_MS;
-
-          const newTopics = allTopics.filter(
-            (t) => new Date(t.created_at).getTime() > lastChecked
-          );
-
-          console.log(`[Discourse] Realtime: ${newTopics.length} new topics`);
-
-          return {
-            items: newTopics,
-            nextState: {
-              phase: "realtime" as const,
-              lastChecked: new Date().toISOString(),
-            },
-          };
-        })
+        handleMonitor(context, input, (routerContext as any)?.state ?? null)
       )
     );
 
     const search = os.search.handler(({ input, context: routerContext }) =>
       Effect.runPromise(
-        Effect.gen(function* () {
-          const state = (routerContext as any)?.state ?? {
-            phase: "historical" as const,
-            lastTopicId: undefined,
-            lastChecked: undefined,
-          };
-
-          let query = input.query;
-          if (input.filters?.username) query += ` @${input.filters.username}`;
-          if (input.filters?.after)
-            query += ` after:${input.filters.after.split("T")[0]}`;
-
-          const result = yield* callAPI(
-            context.baseUrl,
-            context.timeout,
-            context.apiKey,
-            context.apiUsername,
-            "/search.json",
-            {
-              q: query,
-              page: state.lastTopicId ? Math.floor(state.lastTopicId / 20) : 0,
-            }
-          );
-
-          const topics = parseTopics(result.topics || []);
-          const posts = parsePosts(result.posts || []);
-          const hasMore = topics.length >= 20;
-
-          return {
-            topics,
-            posts,
-            nextState: hasMore
-              ? {
-                  ...state,
-                  lastTopicId: (state.lastTopicId || 0) + topics.length,
-                }
-              : null,
-          };
-        })
+        handleSearch(context, input, (routerContext as any)?.state ?? null)
       )
     );
 
@@ -360,4 +424,7 @@ export const testHelpers = {
   parseTopics,
   parseTopic,
   parsePosts,
+  handleGetTopic,
+  handleMonitor,
+  handleSearch,
 };

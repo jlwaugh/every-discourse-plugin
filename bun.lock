@@ -6,7 +6,7 @@
       "dependencies": {
         "@orpc/contract": "^1.8.6",
         "@orpc/server": "^1.8.6",
-        "effect": "^3.17.13",
+        "effect": "^3.18.1",
         "zod": "^4.1.5",
       },
       "devDependencies": {
@@ -394,7 +394,7 @@
 
     "axios": ["axios@1.12.2", "", { "dependencies": { "follow-redirects": "^1.15.6", "form-data": "^4.0.4", "proxy-from-env": "^1.1.0" } }, "sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw=="],
 
-    "baseline-browser-mapping": ["baseline-browser-mapping@2.8.9", "", { "bin": { "baseline-browser-mapping": "dist/cli.js" } }, "sha512-hY/u2lxLrbecMEWSB0IpGzGyDyeoMFQhCvZd2jGFSE5I17Fh01sYUBPCJtkWERw7zrac9+cIghxm/ytJa2X8iA=="],
+    "baseline-browser-mapping": ["baseline-browser-mapping@2.8.10", "", { "bin": { "baseline-browser-mapping": "dist/cli.js" } }, "sha512-uLfgBi+7IBNay8ECBO2mVMGZAc1VgZWEChxm4lv+TobGdG82LnXMjuNGo/BSSZZL4UmkWhxEHP2f5ziLNwGWMA=="],
 
     "batch": ["batch@0.6.1", "", {}, "sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw=="],
 
@@ -548,7 +548,7 @@
 
     "events": ["events@3.3.0", "", {}, "sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q=="],
 
-    "every-plugin": ["every-plugin@0.1.4", "", { "dependencies": { "@better-fetch/fetch": "^1.1.18", "@module-federation/enhanced": "^0.19.1", "@module-federation/node": "^2.7.15", "@module-federation/runtime-core": "^0.19.1", "@orpc/contract": "1.8.6", "@orpc/server": "1.8.6", "effect": "3.17.13", "zod": "4.1.5" }, "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-b08IlcunNZy3nt8sKBnVC4g6pQs0/HcC0BIOVT9N5R3vOyQOhzNRHEHCY93+KMOf8oe5+1Zy3GPzZJQBDN679w=="],
+    "every-plugin": ["every-plugin@0.1.5", "", { "dependencies": { "@better-fetch/fetch": "^1.1.18", "@module-federation/enhanced": "^0.19.1", "@module-federation/node": "^2.7.15", "@module-federation/runtime-core": "^0.19.1", "@orpc/contract": "1.8.6", "@orpc/server": "1.8.6", "effect": "3.17.13", "zod": "4.1.5" }, "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-EXm2yyO017mZaz8+9Z08hGzlWMCBvC+fQMrskEY5MkxKVsS451eVticTlXtZSJSoHR+2lDyCWxZcHvrvPjTWTQ=="],
 
     "exit-hook": ["exit-hook@4.0.0", "", {}, "sha512-Fqs7ChZm72y40wKjOFXBKg7nJZvQJmewP5/7LtePDdnah/+FH9Hp5sgMujSCMPXlxOAW2//1jrW9pnsY7o20vQ=="],
 

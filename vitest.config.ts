@@ -12,5 +12,9 @@ export default defineConfig({
     alias: {
       "@": "./src",
     },
+    conditions: ["import", "node", "default"],
+  },
+  optimizeDeps: {
+    include: ["@effect/vitest"],
   },
 });
