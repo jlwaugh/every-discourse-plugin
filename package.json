@@ -10,21 +10,23 @@
   "scripts": {
     "build": "rspack build && tsc -p tsconfig.build.json",
     "dev": "rspack serve",
-    "test": "bun test",
-    "example:fetch": "bun run index.ts",
-    "example:monitor": "MODE=monitor bun run index.ts",
-    "example:search": "MODE=search bun run index.ts"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "example:fetch": "bun run examples/index.ts",
+    "example:monitor": "MODE=monitor bun run examples/index.ts",
+    "example:search": "MODE=search bun run examples/index.ts"
   },
   "devDependencies": {
+    "@effect/language-service": "^0.41.1",
+    "@effect/vitest": "^0.26.0",
     "@module-federation/enhanced": "^0.19.1",
     "@rspack/cli": "^1.5.2",
     "@rspack/core": "^1.5.2",
     "@types/bun": "latest",
     "@types/node": "^24.3.1",
-    "every-plugin": "^0.1.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.2"
+    "every-plugin": "^0.1.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@orpc/contract": "^1.8.6",

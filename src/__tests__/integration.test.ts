@@ -1,7 +1,7 @@
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { describe } from "vitest";
-import { testHelpers } from "./src";
+import { testHelpers } from "..";
 
 const baseUrl = "https://gov.near.org";
 const timeout = 10000;
