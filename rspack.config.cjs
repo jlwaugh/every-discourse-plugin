@@ -19,14 +19,13 @@ const pluginInfo = getPluginInfo();
 module.exports = {
   entry: "./src/index",
   mode: process.env.NODE_ENV === "development" ? "development" : "production",
-  target: "async-node",
+  target: "web",
   devtool: "source-map",
   output: {
-    uniqueName: pluginInfo.normalizedName,
+    uniqueName: "discourse_source",
     publicPath: "auto",
     path: path.resolve(__dirname, "dist"),
     clean: true,
-    library: { type: "commonjs-module" },
   },
   devServer: {
     static: path.join(__dirname, "dist"),
@@ -50,14 +49,11 @@ module.exports = {
   },
   plugins: [
     new rspack.container.ModuleFederationPlugin({
-      name: pluginInfo.normalizedName,
+      name: "discourse_source",
       filename: "remoteEntry.js",
-      runtimePlugins: [
-        require.resolve("@module-federation/node/runtimePlugin"),
-      ],
-      library: { type: "commonjs-module" },
+      library: { type: "var", name: "discourse_source" },
       exposes: {
-        "./plugin": "./src/index.ts",
+        ".": "./src/index.ts",
       },
       shared: {
         "every-plugin": {

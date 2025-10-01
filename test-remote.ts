@@ -8,20 +8,22 @@ init({
   remotes: [
     {
       name: "discourse_source",
-      entry: "https://adf90ce3.discourse-plugin.pages.dev/remoteEntry.js",
+      entry: "https://4080b5ff.discourse-plugin.pages.dev/remoteEntry.js",
     },
   ],
 });
 
-// Load plugin
-const DiscoursePlugin = (await loadRemote("discourse_source/plugin")) as {
-  initialize: (options: any) => Effect.Effect<any, never, never>;
-  createRouter: (context: any) => any;
+// Load plugin - it has a default export
+const DiscoursePlugin = (await loadRemote("discourse_source")) as {
+  default: {
+    initialize: (options: any) => Effect.Effect<any, never, never>;
+    createRouter: (context: any) => any;
+  };
 };
 
-// Use plugin
+// Use plugin - access via .default
 const context = await Effect.runPromise(
-  DiscoursePlugin.initialize({
+  DiscoursePlugin.default.initialize({
     variables: {
       baseUrl: "https://gov.near.org",
       timeout: 10000,
@@ -31,7 +33,7 @@ const context = await Effect.runPromise(
   })
 );
 
-const router = DiscoursePlugin.createRouter(context);
+const router = DiscoursePlugin.default.createRouter(context);
 const topic = await call(router.getTopic, { id: 123 });
 console.log(`Found topic: ${topic.topic?.title}`);
 console.log(`Posts: ${topic.posts.length}`);

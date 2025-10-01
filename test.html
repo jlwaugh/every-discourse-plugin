@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Discourse Plugin</title>
+  </head>
+  <body>
+    <h1>Testing Discourse Plugin</h1>
+    <div id="output"></div>
+
+    <script type="module">
+      const output = document.getElementById("output");
+
+      try {
+        const MF = await import(
+          "https://esm.sh/@module-federation/enhanced@0.19.1/runtime"
+        );
+        const { init, loadRemote } = MF.default || MF;
+
+        output.innerHTML = "<p>✓ Loading Module Federation...</p>";
+
+        init({
+          name: "host-app",
+          remotes: [
+            {
+              name: "discourse_source",
+              entry:
+                "https://4080b5ff.discourse-plugin.pages.dev/remoteEntry.js",
+            },
+          ],
+        });
+
+        output.innerHTML += "<p>✓ Loading plugin...</p>";
+        const DiscoursePlugin = await loadRemote("discourse_source");
+
+        output.innerHTML += "<p>✓ Instantiating plugin...</p>";
+        const plugin = new DiscoursePlugin.default();
+
+        output.innerHTML += "<p>✓ Plugin loaded successfully!</p>";
+        output.innerHTML += `<p>Plugin ID: ${plugin.id}</p>`;
+        output.innerHTML += `<p>Plugin Type: ${plugin.type}</p>`;
+
+        output.innerHTML += "<p>Calling initialize()...</p>";
+
+        // Call initialize - it returns an Effect
+        const initEffect = plugin.initialize({
+          variables: {
+            baseUrl: "https://gov.near.org",
+            timeout: 10000,
+            batchSize: 20,
+          },
+          secrets: {},
+        });
+
+        console.log("Initialize returned:", initEffect);
+        output.innerHTML += `<p>✓ Initialize returned an Effect object</p>`;
+        output.innerHTML += `<pre>Effect type: ${typeof initEffect}</pre>`;
+
+        output.innerHTML +=
+          '<p style="color: green; font-weight: bold;">🎉 Plugin loaded and initialized successfully in browser!</p>';
+      } catch (error) {
+        output.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+        console.error("Full error:", error);
+      }
+    </script>
+  </body>
+</html>
