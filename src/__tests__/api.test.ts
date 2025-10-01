@@ -217,5 +217,35 @@ describe("Discourse API Tests", () => {
         )
       ).rejects.toThrow();
     });
+
+    it("should handle exponential backoff correctly", async () => {
+      const mockRateLimitResponse = {
+        ok: false,
+        status: 429,
+        statusText: "Too Many Requests",
+      } as Response;
+
+      mockFetch
+        .mockResolvedValueOnce(mockRateLimitResponse)
+        .mockResolvedValueOnce(mockRateLimitResponse)
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true }),
+        } as Response);
+
+      const result = await Effect.runPromise(
+        callAPI(
+          "https://example.com",
+          10000,
+          undefined,
+          undefined,
+          "/test.json"
+        )
+      );
+
+      expect(result).toEqual({ success: true });
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
   });
 });

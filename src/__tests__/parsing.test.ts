@@ -242,6 +242,21 @@ describe("Discourse Parsing Functions", () => {
       expect(posts[1].username).toBe("charlie");
     });
 
+    it("should handle large batches without crashing", () => {
+      const largeArray = Array.from({ length: 100 }, (_, i) => ({
+        id: i,
+        title: `Topic ${i}`,
+        slug: `topic-${i}`,
+        posts_count: 5,
+        like_count: 0,
+        created_at: "2025-01-01T00:00:00Z",
+        last_posted_at: null,
+      }));
+
+      const topics = parseTopics(largeArray);
+      expect(topics).toHaveLength(100);
+    });
+
     it("should handle empty array", () => {
       const posts = parsePosts([]);
       expect(posts).toEqual([]);
