@@ -1,38 +1,50 @@
-import { z } from "zod";
+import { z } from "every-plugin/zod";
 
-export const ProposalSchema = z.object({
+export const DiscourseTopicSchema = z.object({
   id: z.number(),
-  creation_time_ns: z.string(),
-  proposer_id: z.string(),
-  reviewer_id: z.string().nullable(),
-  voting_start_time_ns: z.string().nullable(),
-  voting_duration_ns: z.string(),
-  rejected: z.boolean(),
-  votes: z.array(
-    z.object({
-      total_venear: z.string(),
-      total_votes: z.number(),
-    })
-  ),
-  total_votes: z.object({
-    total_venear: z.string(),
-    total_votes: z.number(),
-  }),
-  status: z.enum(["Created", "Rejected", "Approved", "Voting", "Finished"]),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  link: z.string().optional(),
-  voting_options: z.array(z.string()),
+  title: z.string(),
+  slug: z.string(),
+  posts_count: z.number(),
+  views: z.number().optional(),
+  like_count: z.number(),
+  created_at: z.string().datetime(),
+  last_posted_at: z.string().datetime().nullable(),
+  category_id: z.number().optional(),
+  tags: z.array(z.string()).default([]),
 });
 
-export const AnalysisSchema = z.object({
-  proposalId: z.number(),
-  stage: z.string(),
-  engagement: z.object({
-    level: z.string(),
-  }),
-  summary: z.string(),
+export const DiscoursePostSchema = z.object({
+  id: z.number(),
+  topic_id: z.number(),
+  username: z.string(),
+  cooked: z.string().optional(),
+  created_at: z.string().datetime(),
+  like_count: z.number().default(0),
 });
 
-export type Proposal = z.infer<typeof ProposalSchema>;
-export type Analysis = z.infer<typeof AnalysisSchema>;
+export type DiscourseTopic = z.infer<typeof DiscourseTopicSchema>;
+export type DiscoursePost = z.infer<typeof DiscoursePostSchema>;
+
+// Router output types
+export type GetTopicResult = {
+  topic: DiscourseTopic | null;
+  posts: DiscoursePost[];
+};
+
+export type MonitorResult = {
+  items: DiscourseTopic[];
+  nextState: {
+    phase: "historical" | "realtime";
+    lastTopicId?: number;
+    lastChecked?: string;
+  } | null;
+};
+
+export type SearchResult = {
+  topics: DiscourseTopic[];
+  posts: DiscoursePost[];
+  nextState: {
+    phase: "historical" | "realtime";
+    lastTopicId?: number;
+  } | null;
+};

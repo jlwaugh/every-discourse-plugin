@@ -1,10 +1,27 @@
 {
-  "name": "govnear",
-  "module": "index.ts",
+  "name": "discourse-source",
+  "version": "0.1.0",
+  "description": "Discourse forum integration plugin",
+  "author": "James Waugh",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
+  "scripts": {
+    "build": "rspack build && tsc -p tsconfig.build.json",
+    "dev": "rspack serve",
+    "test": "bun test",
+    "example:fetch": "bun run index.ts",
+    "example:monitor": "MODE=monitor bun run index.ts",
+    "example:search": "MODE=search bun run index.ts"
+  },
   "devDependencies": {
+    "@module-federation/enhanced": "^0.19.1",
+    "@rspack/cli": "^1.5.2",
+    "@rspack/core": "^1.5.2",
     "@types/bun": "latest",
-    "@types/node": "^24.3.1"
+    "@types/node": "^24.3.1",
+    "every-plugin": "^0.1.1"
   },
   "peerDependencies": {
     "typescript": "^5.9.2"
@@ -13,7 +30,6 @@
     "@orpc/contract": "^1.8.6",
     "@orpc/server": "^1.8.6",
     "effect": "^3.17.13",
-    "every-plugin": "^0.1.1",
     "zod": "^4.1.5"
   }
 }

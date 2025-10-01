@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    // Enable latest features
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "module": "ESNext",
@@ -14,14 +13,21 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
-    // Best practices
+    // Enabled flags
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
 
-    // Some stricter flags (disabled by default)
+    // Disabled flags
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Effect plugin
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   }
 }
