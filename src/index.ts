@@ -296,11 +296,10 @@ const handleSearch = (
     query: string;
     filters?: {
       username?: string;
-      minLikes?: number;
       after?: string;
     };
   },
-  state: { phase: "historical" | "realtime"; lastTopicId?: number } | null
+  state: MonitorState | null
 ): Effect.Effect<
   {
     topics: DiscourseTopic[];

@@ -94,7 +94,6 @@ export const discourseContract = oc.router({
         filters: z
           .object({
             username: z.string().optional(),
-            minLikes: z.number().optional(),
             after: z.string().datetime().optional(),
           })
           .optional(),

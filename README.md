@@ -45,7 +45,7 @@ bun test
 ## Features
 
 - **Fetch** - get content of any topic (discussion thread) with all posts and metadata
-- **Search** - text-based queries with various filters (username, date, and likes)
+- **Search** - text-based queries with available filters for username and date range
 - **Monitoring** - real-time data streaming with historical backfill and live updates
 
 ## How It Works
@@ -104,7 +104,6 @@ Exposes data through three typed procedures:
 
 - Input: `{ query: string, filters?: { username?, after? } }`
 - Output: `{ topics: Topic[], posts: Post[], nextState: State | null }`
-- Note: `minLikes` filter defined but not yet implemented
 
 For usage examples, see the [test files](./src/__tests__/).
 
