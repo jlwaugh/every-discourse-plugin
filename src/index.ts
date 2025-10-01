@@ -397,15 +397,27 @@ export default createPlugin({
       Effect.runPromise(handleGetTopic(context, input.id))
     );
 
+    type RouterContext = {
+      state?: MonitorState | null;
+    };
+
     const monitor = os.monitor.handler(({ input, context: routerContext }) =>
       Effect.runPromise(
-        handleMonitor(context, input, (routerContext as any)?.state ?? null)
+        handleMonitor(
+          context,
+          input,
+          (routerContext as RouterContext)?.state ?? null
+        )
       )
     );
 
     const search = os.search.handler(({ input, context: routerContext }) =>
       Effect.runPromise(
-        handleSearch(context, input, (routerContext as any)?.state ?? null)
+        handleSearch(
+          context,
+          input,
+          (routerContext as RouterContext)?.state ?? null
+        )
       )
     );
 
