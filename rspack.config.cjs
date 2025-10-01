@@ -1,69 +1,99 @@
-const {
-  ModuleFederationPlugin,
-} = require("@module-federation/enhanced/rspack");
-const path = require("path");
+const path = require("node:path");
+const { rspack } = require("@rspack/core");
+const pkg = require("./package.json");
+const { getNormalizedRemoteName } = require("every-plugin/normalize");
+const everyPluginPkg = require("every-plugin/package.json");
+
+function getPluginInfo() {
+  return {
+    name: pkg.name,
+    version: pkg.version,
+    normalizedName: getNormalizedRemoteName(pkg.name),
+    dependencies: pkg.dependencies || {},
+    peerDependencies: pkg.peerDependencies || {},
+  };
+}
+
+const pluginInfo = getPluginInfo();
 
 module.exports = {
-  entry: "./src/index.ts",
-  mode: "production",
-  target: "node",
+  entry: "./src/index",
+  mode: process.env.NODE_ENV === "development" ? "development" : "production",
+  target: "async-node",
+  devtool: "source-map",
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "index.js",
-    libraryTarget: "commonjs2",
-    libraryExport: "default",
-    clean: true,
+    uniqueName: pluginInfo.normalizedName,
     publicPath: "auto",
+    path: path.resolve(__dirname, "dist"),
+    clean: true,
+    library: { type: "commonjs-module" },
   },
-  resolve: {
-    extensions: [".ts", ".js"],
+  devServer: {
+    static: path.join(__dirname, "dist"),
+    hot: true,
+    port: 3015,
+    devMiddleware: {
+      writeToDisk: true,
+    },
   },
   module: {
     rules: [
       {
-        test: /\.ts$/,
-        use: {
-          loader: "builtin:swc-loader",
-          options: {
-            jsc: {
-              parser: {
-                syntax: "typescript",
-              },
-              target: "es2022",
-            },
-          },
-        },
+        test: /\.tsx?$/,
+        use: "builtin:swc-loader",
         exclude: /node_modules/,
       },
     ],
   },
+  resolve: {
+    extensions: [".tsx", ".ts", ".js"],
+  },
   plugins: [
-    new ModuleFederationPlugin({
-      name: "discourse_source",
+    new rspack.container.ModuleFederationPlugin({
+      name: pluginInfo.normalizedName,
       filename: "remoteEntry.js",
+      runtimePlugins: [
+        require.resolve("@module-federation/node/runtimePlugin"),
+      ],
+      library: { type: "commonjs-module" },
       exposes: {
-        ".": "./src/index.ts",
+        "./plugin": "./src/index.ts",
       },
       shared: {
         "every-plugin": {
+          version: everyPluginPkg.version,
           singleton: true,
-          requiredVersion: "^0.1.0",
+          requiredVersion: everyPluginPkg.version,
+          strictVersion: false,
+          eager: false,
         },
         effect: {
+          version: everyPluginPkg.dependencies.effect,
           singleton: true,
-          requiredVersion: "^3.18.1",
+          requiredVersion: everyPluginPkg.dependencies.effect,
+          strictVersion: false,
+          eager: false,
         },
         zod: {
+          version: everyPluginPkg.dependencies.zod,
           singleton: true,
-          requiredVersion: "^4.1.5",
+          requiredVersion: everyPluginPkg.dependencies.zod,
+          strictVersion: false,
+          eager: false,
         },
         "@orpc/contract": {
+          version: everyPluginPkg.dependencies["@orpc/contract"],
           singleton: true,
-          requiredVersion: "^1.8.6",
+          requiredVersion: everyPluginPkg.dependencies["@orpc/contract"],
+          strictVersion: false,
+          eager: false,
         },
         "@orpc/server": {
+          version: everyPluginPkg.dependencies["@orpc/server"],
           singleton: true,
-          requiredVersion: "^1.8.6",
+          requiredVersion: everyPluginPkg.dependencies["@orpc/server"],
+          strictVersion: false,
+          eager: false,
         },
       },
     }),
