@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
-import { testHelpers } from "../index";
+import { _testHelpers } from "../index";
 import { Effect } from "every-plugin/effect";
 
-const { callAPI, parseTopics, parseTopic, parsePosts } = testHelpers;
+const { callAPI, parseTopics, parseTopic, parsePosts } = _testHelpers;
 
 describe("Discourse Plugin - Helper Functions", () => {
   let mockFetch: ReturnType<typeof mock>;

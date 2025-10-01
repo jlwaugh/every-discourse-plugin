@@ -1,7 +1,7 @@
 import { expect, it, vi, beforeEach, afterEach, describe } from "vitest";
 import { Effect } from "every-plugin/effect";
-import { testHelpers } from "../index";
-const { callAPI } = testHelpers;
+import { _testHelpers } from "../index";
+const { callAPI } = _testHelpers;
 
 // Mock fetch globally
 const mockFetch = vi.fn();

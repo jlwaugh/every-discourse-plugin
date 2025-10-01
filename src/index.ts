@@ -429,8 +429,8 @@ export default createPlugin({
   },
 });
 
-// Export for testing
-export const testHelpers = {
+/** @internal - For unit testing only, not part of public API */
+export const _testHelpers = {
   callAPI,
   parseTopics,
   parseTopic,

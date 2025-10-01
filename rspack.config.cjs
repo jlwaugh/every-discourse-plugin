@@ -13,6 +13,7 @@ module.exports = {
     libraryTarget: "commonjs2",
     libraryExport: "default",
     clean: true,
+    publicPath: "auto",
   },
   resolve: {
     extensions: [".ts", ".js"],
@@ -50,7 +51,7 @@ module.exports = {
         },
         effect: {
           singleton: true,
-          requiredVersion: "^3.17.13",
+          requiredVersion: "^3.18.1",
         },
         zod: {
           singleton: true,

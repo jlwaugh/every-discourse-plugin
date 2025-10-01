@@ -28,25 +28,109 @@ Run all tests:
 bun test
 ```
 
-### Config
+### Build
 
-#### Variables
+```bash
+bun run build
+```
 
-- baseUrl (string, required) - Your Discourse forum URL
-- timeout (number, default: 10000) - Request timeout in ms
-- batchSize (number, default: 20) - Topics per page (1-100)
-- category (string, optional) - Filter by category slug
+**Outputs:**
 
-#### Secrets (Optional)
+- `dist/index.js` - Compiled plugin
+- `dist/remoteEntry.js` - Module Federation entry
+- `dist/*.d.ts` - TypeScript definitions
 
-- apiKey (string) - Discourse API key for authentication
-- apiUsername (string) - Username for the API key
+## Examples
+
+See working examples in [`examples/index.ts`](./examples/index.ts):
+
+### Fetch latest topic
+
+```bash
+bun run example:fetch
+```
+
+### Monitor for new topics
+
+```bash
+bun run example:monitor
+```
+
+### Search topics and posts
+
+```bash
+bun run example:search
+```
+
+## Config
+
+### Variables
+
+| Variable    | Type   | Default    | Description                     |
+| ----------- | ------ | ---------- | ------------------------------- |
+| `baseUrl`   | string | _required_ | Your Discourse forum URL        |
+| `timeout`   | number | 10000      | Request timeout in milliseconds |
+| `batchSize` | number | 20         | Topics per page (1-100)         |
+| `category`  | string | -          | Filter by category slug         |
+
+### Secrets (Optional)
+
+| Secret        | Description                          |
+| ------------- | ------------------------------------ |
+| `apiKey`      | Discourse API key for authentication |
+| `apiUsername` | Username associated with the API key |
+
+Use secrets only if you need to access private forums or perform authenticated actions.
 
 ## Features
 
-- **Fetch** - get content of any topic (discussion thread) with all posts and metadata
-- **Search** - text-based queries with available filters for username and date range
-- **Monitoring** - real-time data streaming with historical backfill and live updates
+### 📥 Fetch Topics
+
+Get complete topic data with all posts and metadata:
+
+```typescript
+const result = await Effect.runPromise(handleGetTopic(context, topicId));
+// Returns: { topic: Topic | null, posts: Post[] }
+```
+
+### 🔍 Search
+
+Text-based queries with filtering by username and date:
+
+```typescript
+const result = await Effect.runPromise(
+  handleSearch(
+    context,
+    {
+      query: "governance",
+      filters: {
+        username: "alice",
+        after: "2024-01-01T00:00:00Z",
+      },
+    },
+    null
+  )
+);
+// Returns: { topics: Topic[], posts: Post[], nextState: State | null }
+```
+
+### 📊 Monitor
+
+Real-time streaming with historical backfill:
+
+```typescript
+let state = null;
+
+// First call: Historical phase
+const result1 = await Effect.runPromise(
+  handleMonitor(context, { category: "announcements" }, state)
+);
+state = result1.nextState;
+
+// Subsequent calls: Continues pagination or switches to realtime
+const result2 = await Effect.runPromise(handleMonitor(context, {}, state));
+// Returns: { items: Topic[], nextState: State | null }
+```
 
 ## How It Works
 

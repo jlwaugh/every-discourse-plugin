@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { testHelpers } from "../index";
-const { parseTopics, parseTopic, parsePosts } = testHelpers;
+import { _testHelpers } from "../index";
+const { parseTopics, parseTopic, parsePosts } = _testHelpers;
 
 describe("Discourse Parsing Functions", () => {
   describe("parseTopics", () => {
